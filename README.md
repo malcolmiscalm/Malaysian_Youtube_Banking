@@ -22,7 +22,7 @@ pip3 install -r requirements.txt
 
 `Agent and NLP.ipynb`
 
-> googletrans and RoBERTa model is used to translate natural languages that are not supported into English, then the sentiment of the comments in COMMENT_table is deduced.HuggingFace model and OpenAI are implemented for the Text-to-SQL AI Agent.
+> googletrans and RoBERTa model is used to translate natural languages that are not supported into English, then the sentiment of the comments in COMMENT_table is deduced. HuggingFace model and OpenAI are implemented for the Text-to-SQL AI Agent.
 
 `app.py` and `.\pages`
 
