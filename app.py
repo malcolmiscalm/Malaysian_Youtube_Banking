@@ -7,6 +7,18 @@ from plotly import graph_objs as go
 from plotly.subplots import make_subplots
 # this helps us get the theme settings
 import plotly.io as plt_io
+import os
+import sqlite3
+# --------------------------
+# DATABASE INITIALIZATION
+# --------------------------
+BASE_DIR = os.path.dirname(__file__)
+DB_PATH = os.path.join(BASE_DIR, "./Data/RDBMS/malaysian_youtube_banks_sentiment_deduplicated.db")
+
+conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+cursor = conn.cursor()
+
+
 
 app = dash.Dash(__name__, use_pages=True, external_stylesheets=[dbc.themes.SPACELAB])
 server = app.server
@@ -53,4 +65,7 @@ app.layout = dbc.Container([
 
 
 if __name__ == "__main__":
-    app.run(debug=False)
+    # app.run_server(debug=False)
+    app.run_server(host="0.0.0.0", port=int(os.environ.get("PORT", 8050)))
+
+
