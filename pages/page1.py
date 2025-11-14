@@ -1,10 +1,12 @@
 # pages/page1.py
 import dash
-from dash import html, dcc, Input, Output, State
+from dash import html, dcc, Input, Output, State, dash_table
 import dash_bootstrap_components as dbc
 import os
 import re
 import traceback
+import pandas as pd
+import ast
 from dotenv import load_dotenv
 
 from langchain_core.prompts import ChatPromptTemplate
@@ -52,6 +54,7 @@ def run_query(query: str):
     print(f"\n🧩 Clean SQL being run:\n{query}\n")
     try:
         return db.run(query)
+        # return pd.read_sql(query, db)
     except Exception as e:
         print(f"❌ Database execution error:\n{e}")
         raise
@@ -179,7 +182,22 @@ dash.register_page(__name__, path="/", name="Query Assistant")
 
 layout = dbc.Container([
     html.H2("🧩 LLM-SQL Query Assistant", className="text-center mt-4 mb-4"),
+    dbc.Row([
+        html.Img(src=dash.get_asset_url('./ERD/Slide1.jpeg'), alt='My Static Image', style={'width': '1000px'})
+     ]),
 
+    dbc.Row([
+         dbc.RadioItems(
+            id="query-mode",
+            options=[
+                {"label": "Use LLM to write SQL (Costs tokens)", "value": "llm"},
+                {"label": "Write my own SQL (No tokens)", "value": "manual"},
+            ],
+            value="llm",
+            inline=True,
+            className="mb-3"
+        )
+    ]),
     dbc.Row([
         dbc.Col([
             dbc.Textarea(
@@ -210,32 +228,71 @@ layout = dbc.Container([
     Output("error-output", "children"),
     Input("submit-btn", "n_clicks"),
     State("user-question", "value"),
+    State("query-mode", "value"),
     prevent_initial_call=True
 )
-def process_question(n_clicks, user_question):
+def process_question(n_clicks, user_question, mode):
+    
     if not user_question:
         return "", "", "⚠️ Please enter a question."
-
+    
     try:
+       if mode == "manual":
+        cleaned = clean_sql_output(user_question)
+
+        try:
+            df = pd.read_sql(cleaned, db._engine)
+        except Exception as e:
+            return "", "", f"❌ SQL Error: {str(e)}"
+
+        sql_block = dbc.Card([
+            dbc.CardHeader("📄 Executed SQL (User-provided)"),
+            dbc.CardBody(html.Pre(cleaned))
+        ])
+
+        if df.empty:
+            result_table = dbc.Alert("⚠️ Query returned no rows.", color="warning")
+        else:
+            result_table = dash_table.DataTable(
+                id="table-sql-result",
+                columns=[{"name": c, "id": c} for c in df.columns],
+                data=df.to_dict("records"),
+                filter_action="native",
+                sort_action="native",
+                page_size=20,
+                style_table={'overflowX': 'auto'},
+            )
+
+        result_block = dbc.Card([
+            dbc.CardHeader("📊 SQL Result (Formatted Table)"),
+            dbc.CardBody(result_table)
+        ])
+
+        return sql_block, result_block, ""
+
+
+        # ----------------------------------------------------
+        # LLM MODE (your original logic)
+        # ----------------------------------------------------
         llm = get_llm(load_from_hugging_face=False)
         response = answer_user_query(user_question, llm)
 
         sql_query = response.get("sql", "SQL query not detected.")
         nl_answer = response.get("answer", "")
 
-        # Build display cards
         sql_block = dbc.Card([
             dbc.CardHeader("🧠 Generated SQL Query"),
             dbc.CardBody(html.Pre(sql_query))
-        ], className="mb-3 shadow-sm")
+        ])
 
         nl_answer_block = dbc.Card([
             dbc.CardHeader("💬 Answer"),
             dbc.CardBody(html.Div(nl_answer))
-        ], className="shadow-sm")
+        ])
 
         return sql_block, nl_answer_block, ""
 
     except Exception as e:
         tb = traceback.format_exc(limit=2)
         return "", "", f"❌ Error: {str(e)}\n\n{tb}"
+

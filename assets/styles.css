@@ -1,0 +1,11 @@
+.my_experiment {
+  color: maroon;
+  text-align: center;
+  border: 2px solid #e67d7d;
+  padding: 10px;
+}
+
+.css_date_range_picker {
+  border: 2px solid #e67d7d;
+  background-color: red;
+}
