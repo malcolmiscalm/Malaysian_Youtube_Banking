@@ -1,15 +1,17 @@
+version: 1
+
 services:
   - name: dash-sqlite-app
     type: web
-    env: python
+    runtime: python
     region: singapore
     plan: starter
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app.server --bind 0.0.0.0:$PORT
-    envVars:
-      DASH_ENV: "production"
-# Optional (if using PostgreSQL instead of SQLite)
-# databases:
-#   - name: dash-db
-#     plan: free
 
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r requirements.txt
+
+    startCommand: gunicorn app:app.server --bind 0.0.0.0:$PORT
+
+    envVars:
+      DASH_ENV: production
